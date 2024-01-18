@@ -19,3 +19,6 @@ pip install -r requirements.txt
 
 # 退出虚拟环境
 deactivate
+
+# 运行预约平台
+streamlit run main.py
