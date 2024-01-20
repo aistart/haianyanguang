@@ -88,4 +88,4 @@ tests/test_resource/*
 explore
 
 
-*.db
+# *.db
