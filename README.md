@@ -28,3 +28,5 @@ deactivate
 # 运行预约平台
 streamlit run main.py
 
+# C:\Windows\System32\drivers\etc
+20.27.177.113 github.com
