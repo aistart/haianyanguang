@@ -36,6 +36,12 @@ streamlit run main.py
 # 创建虚拟环境
 python3 -m venv venv
 
+# github 同步信息
+git pull origin main
+或者
+git fetch origin main
+git reset --hard origin/main
+
 # 使用venv (在haianyanggang根目录下)
 source venv/bin/activate
 pip install -r requirements.txt
