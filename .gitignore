@@ -90,3 +90,5 @@ explore
 
 
 # *.db
+# windows和ubuntu路径不同，不再同步init_streamlit.py这个文件
+init_streamlit.py

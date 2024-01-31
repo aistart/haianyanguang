@@ -134,10 +134,33 @@ def add_new_appointment_form():
     # 创建套系选择列表
     package_options = [f"{package['serial']}. {package['title']}" for package in photography_packages]
 
-    # 初始化或重置表单字段
-    if 'form_submitted' not in st.session_state or st.session_state['form_submitted']:
+    # Initialize Session State Variables
+    if 'new_customer_name' not in st.session_state:
         st.session_state['new_customer_name'] = ""
-        st.session_state['new_package'] = package_options[0]  # 设置默认选择为列表的第一项
+
+    if 'new_package' not in st.session_state:
+        st.session_state['new_package'] = package_options[0]  # Assuming package_options is defined earlier
+
+    if 'new_contact_info' not in st.session_state:
+        st.session_state['new_contact_info'] = ""
+
+    if 'new_remarks' not in st.session_state:
+        st.session_state['new_remarks'] = ""
+
+    if 'new_appointment_date' not in st.session_state:
+        st.session_state['new_appointment_date'] = datetime.date.today()
+
+    if 'new_appointment_time' not in st.session_state:
+        st.session_state['new_appointment_time'] = "09:00-11:00"
+
+    if 'form_submitted' not in st.session_state:
+        st.session_state['form_submitted'] = False
+
+    # Your existing code that updates session state variables conditionally
+    if st.session_state['form_submitted']:
+        # Here, you can reset the values after form submission, if needed
+        st.session_state['new_customer_name'] = ""
+        st.session_state['new_package'] = package_options[0]
         st.session_state['new_contact_info'] = ""
         st.session_state['new_remarks'] = ""
         st.session_state['new_appointment_date'] = datetime.date.today()
