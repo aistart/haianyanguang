@@ -253,10 +253,10 @@ def show_user_bookings(name, phone):
             # 解析预约信息中的各个字段
             booking_id, user_name, booking_date, booking_time, package_name, phone_number, additional_info = booking
             # 按照指定格式输出信息
-            st.success(f"预约所用名：{user_name}\n\n 预约：{booking_date} , {booking_time}  \n\n 套系序号：{package_name}  \n\n 备注：{additional_info}")
+            st.success(f"姓名：{user_name}\n\n 预约：{booking_date} , {booking_time}  \n\n 套系：{package_name}  \n\n 备注：{additional_info}")
             
-        st.write("**咨询微信：18611401551。**")
-        st.write("**座机：010-82927090。**")
+        st.write("**如需调整预约时间或咨询详情，可联系：**")
+        st.write("**电话/微信：18611401551。座机：010-82927090。**")
     else:
         st.write(f"暂无预约。可选择您喜欢的套系后点击预约。")
 
@@ -288,14 +288,15 @@ def user_main():
     if 'selected_package' not in st.session_state:
         for package in photography_packages:
             with st.container():
-                col1, col2 = st.columns([1, 3])
+                col1, col2 = st.columns([3, 1])
                 with col1:
-                    st.image(package["image_path"], use_column_width=True)
-                with col2:
                     st.subheader(f"{package['serial']}. {package['title']}")
                     st.write(f"{package['description']} ")
                     if st.button(f"预约●{package['title']}", key=package["serial"]):
                         st.session_state['selected_package'] = package
+                with col2:
+                    st.image(package["image_path"], use_column_width=True)
+
     else:
         show_booking_page(st.session_state['selected_package'])
     
