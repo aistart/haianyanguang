@@ -5,7 +5,7 @@ photography_packages = [
      "image_path": "./static/1.jpg"},
 
     {"serial": 2, "id": "774390634", "title": "百天/周岁照亲子合影",
-     "description": "宝贝百天照周岁照套系不含大人妆造。小朋友拍摄3套服装 22张精修，底片全送 ，一本8x10寸的相册 一个10寸摆台。适合0-1岁小宝宝。小朋友配合好的话，拍摄三套服装差不多一个小时左右。如果过拍摄过程中小朋友不配合或者状态不佳 ，还可以改天再拍。周岁照现在有抓周主题。还有很多风格，亲可以加个店微发你看哦 ，也可以到店拍摄时现场选。",
+     "description": "宝贝百天照周岁照套系不含大人妆造。小朋友拍摄3套服装 22张精修，底片全送 ，一本8x10寸的相册 一个10寸摆台。适合0-1岁小宝宝。小朋友配合好的话，拍摄三套服装差不多一个小时左右。如果过拍摄过程中小朋友不配合或者状态不佳 ，还可以改天再拍。周岁照现在有抓周主题。",
      "image_path": "./static/2.jpg"},
 
     {"serial": 3, "id": "763029119", "title": "超值宝宝单人加亲子主题套系",
@@ -62,6 +62,7 @@ import datetime
 import pandas as pd
 
 from .yuyue_database import *
+from .utils import send_booking_email
 # 已经在main中带import
 
 
@@ -83,9 +84,12 @@ def is_slot_available(selected_date, slot):
     # 如果找到了对应的记录并且该时段是开放的，则返回 True
     return result is not None and result[0]
 
+def parse_date(date_str):
+    return datetime.datetime.strptime(date_str, "%Y-%m-%d").date()  # 正确使用 datetime.strptime
 
 
 def show_booking_page(package):
+
     with st.container():
         col1, col2 = st.columns([1, 3])
     with col1:
@@ -94,37 +98,9 @@ def show_booking_page(package):
         st.subheader(f"您正在预约:")
         st.subheader(f"{package['serial']}. {package['title']}")
     st.write(f"{package['description']} ")
-
-    # 默认selected_date为今天
-    selected_date = st.date_input(f"请选择日期和时间段（营业时间9:00-19:00）", datetime.date.today())
-    # 计算所选日期所在周的第一天（周一）
-    start_date = get_week_start_date(selected_date)
-
-    time_slots = ["09:00-11:00", "11:00-13:00", "13:00-15:00", "15:00-17:00", "17:00-19:00"]
-    days = ["一", "二", "三", "四", "五", "六", "日"]
-    
-    week_dates = [start_date + datetime.timedelta(days=i) for i in range(7)]
-
-    # 创建 DataFrame周日历表格
-    current_date = datetime.datetime.now().date()  # 获取当前日期
-    data = {day: [] for day in days}
-    for slot in time_slots:
-        for i, date in enumerate(week_dates):
-            if date < current_date:
-                data[days[i]].append("-")
-            else:
-                status = is_slot_available(date, slot)
-                if status is None:
-                    data[days[i]].append("/")
-                elif status:
-                    data[days[i]].append(f"<span style='color: green;'>可</span>")
-                else:
-                    data[days[i]].append("满")
-
-    df = pd.DataFrame(data, index=[slot[:2] for slot in time_slots])
-
-    # 显示表格
-    st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+    if st.button('返回首页●选择其它套系'):
+        del st.session_state['selected_package']
+        st.experimental_rerun()  # 可选：刷新页面以反映状态的改变
 
     # 将英文周几映射到中文
     weekday_mapping = {
@@ -136,75 +112,134 @@ def show_booking_page(package):
         'Saturday': '六',
         'Sunday': '日'
     }
-
-    current_datetime = datetime.datetime.now()
-
-    # 获取今天和选择日期的周几，然后用中文表示
-    today_weekday = weekday_mapping[current_datetime.strftime('%A')]
-    selected_date_weekday = weekday_mapping[selected_date.strftime('%A')]
+    time_slots = ["09:00-11:00", "11:00-13:00", "13:00-15:00", "15:00-17:00", "17:00-19:00"]
+    days = ["一", "二", "三", "四", "五", "六", "日"]
 
     # 获取今天的日期
     current_date = datetime.date.today()
+    # 获取当前的日期和时间
+    current_datetime = datetime.datetime.now()
+    # 获取今天是周几，然后用中文表示
+    today_weekday = weekday_mapping[current_datetime.strftime('%A')]
+
+
+    # 默认selected_date为明天
+    selected_date = st.date_input(f"今天{current_date.strftime('%m月%d号（')}周{today_weekday}）请选择预约日期", 
+                                  datetime.date.today() + datetime.timedelta(days=1))
 
     # 根据用户选择的日期显示不同的信息
-    if selected_date != current_date:
-        st.markdown(f"今天{current_date.strftime('%m月%d号（')}周{today_weekday}）选择{selected_date.strftime('%m月%d号（')}周{selected_date_weekday}）")
-    else:
-        st.markdown(f"选择今天：{current_date.strftime('%m月%d号（')}周{today_weekday}）")
+    if selected_date > current_date:
 
-    # 使用会话状态存储所选时间
-    if 'selected_time' not in st.session_state:
-        st.session_state.selected_time = None
-    for slot in time_slots:
-        status = is_slot_available(selected_date, slot)
-        slot_status = "仍有空档可选" if status else "已满"
-        button_label = f"{slot} - {slot_status}"
+        # 获取今天和选择日期的周几，然后用中文表示
+        selected_date_weekday = weekday_mapping[selected_date.strftime('%A')]
 
-        if st.button(button_label, key=f"{selected_date}_{slot}"):
-            st.session_state.selected_time = f"{slot}"
-            if status:
-                st.success(f"您已选择 {selected_date}_{slot} 时段")
-            else:
-                st.error(f"{selected_date}_{slot} 时段不可预约")
+        st.markdown(f"请选{selected_date.strftime('%m月%d号（')}周{selected_date_weekday}）的具体时段\n")
 
+        # 计算所选日期所在周的第一天（周一）
+        start_date = get_week_start_date(selected_date)
 
-    with st.form(key='booking_form'):
-        st.write("请填写预约信息：")
-        name = st.text_input("姓名")
-        phone = st.text_input("电话/微信")
-        remarks = st.text_area("备注")  # 添加备注信息输入框
-        # 获取当前的日期和时间
-        current_datetime = datetime.datetime.now()
+        week_dates = [start_date + datetime.timedelta(days=i) for i in range(7)]
 
-        # 格式化日期和时间为字符串（这里使用了年-月-日 时:分:秒的格式）
-        formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        # 创建 DataFrame周日历表格
+        # current_date = datetime.datetime.now().date()  # 获取当前日期
+        data = {day: [] for day in days}
+        for slot in time_slots:
+            for i, date in enumerate(week_dates):
+                if date <= current_date:
+                    data[days[i]].append("-")
+                else:
+                    status = is_slot_available(date, slot)
+                    if status is None:
+                        data[days[i]].append("/")
+                    elif status:
+                        # 如果是 selected_date 且状态为可预约，使用粗体显示
+                        if date == selected_date:
+                            data[days[i]].append("<b style='color: green;'>可</b>")
+                        else:
+                            data[days[i]].append(f"<span style='color: green;'>可</span>")
+                    else:
+                        # 如果是 selected_date 且状态为可预约，使用粗体显示
+                        if date == selected_date:
+                            data[days[i]].append("<b>满</b>")
+                        else:
+                            data[days[i]].append(f"<span>满</span>")
 
-        # 将格式化的日期和时间附加到用户输入的备注信息后面
-        full_remarks = f"{remarks} (用户提交时间: {formatted_datetime})"
-        submit_button = st.form_submit_button(label='提交预约')
+        df = pd.DataFrame(data, index=[slot[:2] for slot in time_slots])
 
-    if submit_button:
-        if st.session_state.selected_time:
-            photoSet = f"{package['serial']}. {package['title']}"
-            # Use st.session_state.selected_time instead of selected_time
-            if save_booking(photoSet, name, phone, selected_date, st.session_state.selected_time, full_remarks):
-                st.success(f"已收到您的预约信息，我们会尽快联系您，给您确认。")
-                st.success(f"\n您已预约：{photoSet}")
-                st.write(f"\n姓名: {name}")
-                st.write(f"\n电话/微信: {phone}")
-                st.write(f"\n日期: {selected_date}  ,  {st.session_state.selected_time}")
-                st.write(f"\n备注: {remarks}")
-                # 发送邮件
-                send_booking_email(photoSet, name, phone, selected_date, st.session_state.selected_time)
-            else:
-                st.error("您在此时间段已有预约，请选择其他时间。")
-        else:
-            st.error("请先选择好拍照日期和时间段")
+        # 显示表格
+        st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+        
+        st.markdown("（营业时间09:00-19:00）")
+            # 使用会话状态存储所选时间
+        if 'selected_time' not in st.session_state:
+            st.session_state.selected_time = None
+        for slot in time_slots:
+            status = is_slot_available(selected_date, slot)
+            slot_status = "仍有空档可选" if status else "已满"
+            button_label = f"{slot} - {slot_status}"
 
+            if st.button(button_label, key=f"{selected_date}_{slot}"):
+                if status:
+                    st.success(f"您已选择 {selected_date}_{slot} 时段")
+                    st.session_state.selected_time = f"{slot}"
+                else:
+                    st.error(f"{selected_date}_{slot} 时段不可预约")
+                    st.session_state.selected_time = None
+                    
+        with st.form(key='booking_form'):
+            st.write("请填写预约信息：")
+            name = st.text_input("姓名")
+            phone = st.text_input("电话/微信")
+            remarks = st.text_area("备注")  # 添加备注信息输入框
+
+            # 格式化日期和时间为字符串（这里使用了年-月-日 时:分:秒的格式）
+            current_datetime = datetime.datetime.now()
+            formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+            # 将格式化的日期和时间附加到用户输入的备注信息后面
+            full_remarks = f"{remarks} (提交预约时间: {formatted_datetime})"
+            submit_button = st.form_submit_button(label='提交预约')
+
+        if submit_button:
+            # 验证用户是否已输入姓名和电话/微信
+            if not name or not phone :
+                st.error("您需输入预约人姓名、联系方式")
+            elif st.session_state.selected_time:
+                photoSet = f"{package['serial']}. {package['title']}"
+                # 使用 st.session_state.selected_time 而不是 selected_time
+                if save_booking(photoSet, name, phone, selected_date, st.session_state.selected_time, full_remarks):
+                    # 预约成功的消息
+                    st.success(f"\n您已预约：{photoSet}")
+                    st.write(f"\n姓名: {name}")
+                    st.write(f"\n电话/微信: {phone}")
+                    st.write(f"\n日期: {selected_date}  ,  {st.session_state.selected_time}")
+                    st.write(f"\n备注: {remarks}")
+                    # 发送邮件
+                    send_booking_email(photoSet, name, phone, selected_date, st.session_state.selected_time, remarks)
+                    st.success("已收到您的预约信息，我们会尽快联系您，给您确认。")
+                    # 查询数据库中的预约信息：对提交了多条预约信息的情况给予提示
+                    bookings = get_user_bookings(name, phone)
+                    future_bookings = [booking for booking in bookings if parse_date(booking[2]) >= current_date]
+                    
+                    if len(future_bookings) > 1:
+                        st.warning("提醒您已有多条预约")
+                        for booking in future_bookings:
+                            st.write(f"预约日期: {booking[2]}, 时间段: {booking[3]}, 套系: {booking[4]}")
+                        st.warning("如有重复预约，请联系客服取消。")
     
+                else:
+                    st.error("您在此时间段已有预约。取消预约请联系客服。")
+            else:
+                st.error("请先选择好拍照日期和时间段")
+    else:
+        st.markdown(f"此日期已不可在线预约。")
+
+    st.markdown(f" * 如预定当天，请直接电话或微信联系。")
+
+    st.write(f"* 北京海岸阳光亲子摄影工作室")
+    st.write(f"电话/微信：18611401551。")
+    st.write(f"座机：010-82927090。")
     st.write(f"-------------------- ")
-    st.write(f"北京海岸阳光亲子摄影工作室。")
-    st.write(f"电微：18611401551。座机：010-82927090。")
 
 
 def show_user_bookings(name, phone):
@@ -217,8 +252,7 @@ def show_user_bookings(name, phone):
             # 解析预约信息中的各个字段
             booking_id, user_name, booking_date, booking_time, package_name, phone_number, additional_info = booking
             # 按照指定格式输出信息
-            st.success(f"序号{package_name}。")
-            st.write(f"{booking_date} , {booking_time} ")
+            st.success(f"预约所用名：{user_name}\n\n 预约：{booking_date} , {booking_time}  \n\n 套系序号：{package_name}  \n\n 备注：{additional_info}")
             
         st.write("**咨询微信：18611401551。**")
         st.write("**座机：010-82927090。**")
@@ -226,8 +260,12 @@ def show_user_bookings(name, phone):
         st.write(f"暂无预约。可选择您喜欢的套系后点击预约。")
 
 def user_main():
+        # 在页面顶部放置一个锚点
+    st.markdown("<a id='page-top'></a>", unsafe_allow_html=True)
+
     st.title("海岸阳光摄影●用户预约")
-    # 初始化会话状态
+
+    # 检查会话状态是否已经初始化
     if 'name' not in st.session_state:
         st.session_state['name'] = ''
     if 'phone' not in st.session_state:
@@ -235,12 +273,16 @@ def user_main():
 
     with st.expander("点击可查询已预约信息"):  # 使用 expander 组件
         with st.form(key='query_form'):
-            st.session_state['name'] = st.text_input("姓名", value=st.session_state['name'])
-            st.session_state['phone'] = st.text_input("电话/微信", value=st.session_state['phone'])
+            # name_input = st.text_input("姓名", value=st.session_state['name'])
+            phone_input = st.text_input("预约所用的电话/微信", value=st.session_state['phone'])
             submit_query = st.form_submit_button("查询已预约信息")
 
     if submit_query:
+        # 更新会话状态
+        # st.session_state['name'] = name_input if name_input is not None else ''
+        st.session_state['phone'] = phone_input if phone_input is not None else ''
         show_user_bookings(st.session_state['name'], st.session_state['phone'])
+
 
     if 'selected_package' not in st.session_state:
         for package in photography_packages:
@@ -250,9 +292,17 @@ def user_main():
                     st.image(package["image_path"], use_column_width=True)
                 with col2:
                     st.subheader(f"{package['serial']}. {package['title']}")
-                    if st.button(f"预约 {package['title']}", key=package["serial"]):
+                    if st.button(f"预约●{package['title']}", key=package["serial"]):
                         st.session_state['selected_package'] = package
     else:
         show_booking_page(st.session_state['selected_package'])
     
+    # 在页面底部添加一个返回顶部的链接
+    st.markdown("[返回顶部](#page-top)", unsafe_allow_html=True)
+    
+    st.write("\n ")
+    st.write("\n ")
+    st.write("\n ")
+    st.write("\n ")
+    st.write("\n ")
     st.write("网站备案号: [京ICP备2022032803号-1](https://beian.miit.gov.cn)")

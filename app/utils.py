@@ -19,7 +19,7 @@ password = 'BJB!gWPm2NwVuj3'
 From = formataddr(['daoootop@aliyun.com','daoootop@aliyun.com'])  #昵称(邮箱没有设置外发指定自定义昵称时有效)+发信地址(或代发)
 replyto = 'daoootop@aliyun.com'  #回信地址
 
-def send_booking_email(photoSet, name, phone, date, time_slot):
+def send_booking_email(photoSet, name, phone, date, time_slot, remarks):
     '''定义收件对象'''
     to =  ','.join(['aistart@aliyun.com', ''])  #收件人 = 'aistart@aliyun.com'
     cc = ','.join(['', ''])  #抄送
@@ -40,10 +40,22 @@ def send_booking_email(photoSet, name, phone, date, time_slot):
     msg['Message-id'] = email.utils.make_msgid()
     msg['Date'] = email.utils.formatdate()
     msg['Subject'] = Subject
-    ''''1.2 正文text/plain部分'''
-    Content = f"预约套系： {photoSet}\n预约人: {name}\电话/微信: {phone}\n日期: {date}\n时间段: {time_slot}"
-    textplain = MIMEText(Content, _subtype='plain', _charset='UTF-8')
-    msg.attach(textplain)
+    # ''''1.2 正文text/plain部分'''
+    # Content = f"\n预约套系： {photoSet}\n\n预约人: {name}\n\n电话/微信: {phone}\n\n日期: {date}\n\n时间段: {time_slot}\n\n\n 登录预约管理系统 https://yuyue.daooo.top/"
+    # textplain = MIMEText(Content, _subtype='plain', _charset='UTF-8')
+    # msg.attach(textplain)
+
+    '''1.3 正文text/html部分'''
+    Content_HTML = f"""<p>预约套系： {photoSet}</p>
+                       <p>预约人: {name}</p>
+                       <p>电话/微信: {phone}</p>
+                       <p>日期: {date}</p>
+                       <p>时间段: {time_slot}</p>
+                       <p>备注：{remarks}</p>
+                       <p><a href="https://yuyue.daooo.top/">登录预约管理系统</a></p>"""
+    texthtml = MIMEText(Content_HTML, _subtype='html', _charset='UTF-8')
+    msg.attach(texthtml)
+
     # '''1.3 封装附件'''
     # file = r'C:\Users\yourname\Desktop\某文件夹\123.pdf'   #指定本地文件，请换成自己实际需要的文件全路径。
     # att = MIMEText(open(file, 'rb').read(), 'base64', 'utf-8')
@@ -157,12 +169,16 @@ def log_action(user, action, description):
 def view_logs():
     """从数据库获取并展示日志信息"""
     st.title("查询系统日志")
-
+    st.write("默认从最近显示日志信息。")
     # 日期过滤器
-    start_date = st.date_input("开始日期", datetime.now())
-    end_date = st.date_input("结束日期", datetime.now())
+    start_date = st.date_input("开始日期", datetime.now().date())
+    end_date = st.date_input("结束日期", datetime.now().date())
+
     if st.button("检索"):
-        fetch_logs(start_date, end_date)
+        if end_date < start_date:
+            st.error("结束日期必须大于或等于开始日期。")
+        else:
+            fetch_logs(start_date, end_date)
     else:
         fetch_logs()
 
@@ -186,7 +202,7 @@ def fetch_logs(start_date=None, end_date=None):
 
     if logs:
         # 分页显示
-        page_size = 10
+        page_size = 30
         total_pages = len(logs) // page_size + (1 if len(logs) % page_size > 0 else 0)
         page_number = st.number_input('选择页码', min_value=1, max_value=total_pages, value=1)
         start_index = (page_number - 1) * page_size

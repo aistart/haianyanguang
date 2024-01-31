@@ -47,4 +47,7 @@ def init_streamlit(streamlit_model_path, title, footer):
 
 
 streamlit_model_path = os.path.join(ROOT_PATH, 'venv\\lib\\site-packages\\streamlit')
+# ubuntu
+# streamlit_model_path = os.path.join(ROOT_PATH, 'venv/lib/python3.8/site-packages/streamlit')
+
 init_streamlit(streamlit_model_path=streamlit_model_path, title='海岸阳光预约平台', footer='Copyright © 2024')

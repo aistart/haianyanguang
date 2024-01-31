@@ -1,6 +1,7 @@
 
 # 预约信息数据库
 import sqlite3
+from .utils import view_logs,log_action
 
 def setup_database():
     conn = sqlite3.connect('admin.db')
@@ -76,7 +77,7 @@ def save_booking(package, name, contact_info, selected_date, selected_time, rema
         print("New appointment saved:", package, name, contact_info, selected_date, selected_time)  # 调试信息
         return True
     else:
-        print("Appointment already exists for:", contact_info, selected_date, selected_time)  # 调试信息
+        print("已预约了该时段:", contact_info, selected_date, selected_time)  # 调试信息
         return False
 
     conn.close()
@@ -86,7 +87,7 @@ def get_user_bookings(name, phone):
     cursor = conn.cursor()
 
     # 查询最近5次的预约信息
-    cursor.execute("SELECT * FROM appointments WHERE customer_name = ? AND contact_info = ? ORDER BY appointment_date DESC, appointment_time DESC LIMIT 5", (name, phone))
+    cursor.execute("SELECT * FROM appointments WHERE customer_name = ? OR contact_info = ? ORDER BY appointment_date DESC, appointment_time DESC LIMIT 5", (name, phone))
     bookings = cursor.fetchall()
 
     conn.close()

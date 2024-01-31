@@ -30,3 +30,15 @@ streamlit run main.py
 
 # C:\Windows\System32\drivers\etc
 20.27.177.113 github.com
+
+# ################################3
+# ubuntu 模式下
+# 创建虚拟环境
+ python3 -m venv 
+
+# 使用venv (在haianyanggang根目录下)
+source venv/bin/activate
+
+# 如何从github同步最新代码时，更新了init_streamlit.py，要注意修改路径
+streamlit_model_path = os.path.join(ROOT_PATH, 'venv/lib/python3.8/site-packages/streamlit')
+
