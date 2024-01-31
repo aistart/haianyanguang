@@ -293,6 +293,7 @@ def user_main():
                     st.image(package["image_path"], use_column_width=True)
                 with col2:
                     st.subheader(f"{package['serial']}. {package['title']}")
+                    st.write(f"{package['description']} ")
                     if st.button(f"预约●{package['title']}", key=package["serial"]):
                         st.session_state['selected_package'] = package
     else:
